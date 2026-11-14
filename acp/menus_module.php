@@ -67,7 +67,6 @@ class menus_module
 
 		$template->assign_vars(array(
 			'U_BACK'        => $this->u_action,
-			'PORTAL_JS'     => $portal_js,
 			'IMG_PATH'      => $img_path_acp_menu_icons,
 			'IMG_PATH_ACP'  => $img_path_acp_icons,
 			'CSS_PATH'      => $css_path_acp,

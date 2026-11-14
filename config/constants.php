@@ -37,5 +37,4 @@ $ext = 'ext/phpbbireland/portal/';
 $img_path_acp_block_icons	= $phpbb_root_path . $ext . 'images/block_images/block/';
 $img_path_acp_menu_icons	= $phpbb_root_path . $ext . 'images/block_images/menu/';
 $img_path_acp_icons			= $phpbb_root_path . $ext . 'adm/images/';
-$portal_js					= $phpbb_root_path . $ext . 'js/portal.js';
 $css_path_acp				= $phpbb_root_path . $ext . 'adm/style/';

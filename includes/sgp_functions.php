@@ -40,24 +40,78 @@ if (!defined('IN_PHPBB'))
    exit;
 }
 
+if (!function_exists('portal_normalize_block_list'))
+{
+	/**
+	 * Convert a submitted block layout to a unique comma-separated list of IDs.
+	 *
+	 * @param string $value Raw UCP or cookie value
+	 * @return string
+	 */
+	function portal_normalize_block_list($value)
+	{
+		$ids = array();
+		foreach (preg_split('/[,\s&]+/', trim((string) $value), -1, PREG_SPLIT_NO_EMPTY) as $candidate)
+		{
+			if (ctype_digit($candidate) && (int) $candidate > 0)
+			{
+				$ids[] = (int) $candidate;
+			}
+		}
+		$ids = array_values(array_unique($ids));
+
+		return implode(',', $ids);
+	}
+}
+
+if (!function_exists('portal_sanitize_menu_target'))
+{
+	/**
+	 * Accept HTTP(S) URLs or a relative phpBB path and reject executable schemes.
+	 *
+	 * @param string $target
+	 * @return string
+	 */
+	function portal_sanitize_menu_target($target)
+	{
+		$target = trim((string) $target);
+		if ($target === '')
+		{
+			return '';
+		}
+
+		if (filter_var($target, FILTER_VALIDATE_URL))
+		{
+			$scheme = strtolower((string) parse_url($target, PHP_URL_SCHEME));
+			return in_array($scheme, array('http', 'https'), true) ? $target : '';
+		}
+
+		if (preg_match('/[\x00-\x20<>"\'\\\\]/', $target)
+			|| preg_match('#(^|/)\.\.(/|$)#', $target)
+			|| preg_match('#^[a-z][a-z0-9+.-]*:#i', $target)
+			|| strpos($target, '//') === 0)
+		{
+			return '';
+		}
+
+		return ltrim($target, '/');
+	}
+}
+
 if (!function_exists('sgp_get_rand_logo'))
 {
 	function sgp_get_rand_logo()
 	{
 		global $user, $phpbb_root_path, $k_config;
-		$rand_logo = "";
-		$imglist = "";
-		$imgs ="";
 
 		// Random logos are disabled config, so return default logo //
-		if ($k_config['k_allow_rotating_logos'] == 0)
+		if (empty($k_config) || empty($k_config['k_allow_rotating_logos']))
 		{
 			return $user->img('site_logo');
 		}
 
-		mt_srand((double) microtime()*1000001);
-
-		$logos_dir = $phpbb_root_path . 'ext/phpbbireland/portal/styles/' . rawurlencode($user->style['style_path']) . '/theme/images/logos';
+		$style_path = basename($user->style['style_path']);
+		$logos_dir = $phpbb_root_path . 'ext/phpbbireland/portal/styles/' . $style_path . '/theme/images/logos';
 
 		$handle = @opendir($logos_dir);
 
@@ -66,29 +120,25 @@ if (!function_exists('sgp_get_rand_logo'))
 			return($user->img('site_logo'));
 		}
 
+		$images = array();
 		while (false !== ($file = readdir($handle)))
 		{
-			if (stripos($file, ".gif") || stripos($file, ".jpg") || stripos($file, ".png") && stripos($file ,"ogo_") || stripos($file ,"logo"))
+			if (preg_match('/\.(?:gif|jpe?g|png)$/i', $file))
 			{
-				$imglist .= "$file ";
+				$images[] = $file;
 			}
 		}
 		closedir($handle);
 
-		$imglist = explode(" ", $imglist);
-
-		if (sizeof($imglist) < 2)
+		if (!$images)
 		{
 			return $user->img('site_logo');
 		}
 
-		$random = mt_rand(0, (mt_rand(0, (sizeof($imglist)-2))));
+		$image = $images[array_rand($images)];
+		$web_path = 'ext/phpbbireland/portal/styles/' . rawurlencode($style_path) . '/theme/images/logos/' . rawurlencode($image);
 
-		$image = $imglist[$random];
-
-		$rand_logo .= '<img src="' . $logos_dir . '/' . $image . '" alt="" /><br />';
-
-		return ($rand_logo);
+		return '<img src="' . utf8_htmlspecialchars($web_path) . '" alt="" /><br />';
 	}
 }
 
@@ -531,7 +581,7 @@ if (!function_exists('generate_menus'))
 	function generate_menus()
 	{
 		global $k_groups, $k_blocks, $k_menus;
-		global $template, $phpbb_root_path, $auth, $user, $phpEx, $request;
+		global $template, $phpbb_root_path, $auth, $user, $phpEx, $request, $config;
 		static $process = 0;
 
 		$menu_image_path = $phpbb_root_path . 'ext/phpbbireland/portal/images/block_images/menu/';
@@ -545,7 +595,7 @@ if (!function_exists('generate_menus'))
 		//$user->add_lang('portal/kiss_block_variables');
 		$user->add_lang_ext('phpbbireland/portal', 'kiss_block_variables');
 
-		$p_count = count($k_menus);
+		$p_count = $k_menus ? max(array_map('intval', array_keys($k_menus))) : 0;
 
 		$hash = $request->variable('hash', '');
 
@@ -611,29 +661,37 @@ if (!function_exists('generate_menus'))
 					$name = strtoupper($k_menus[$i]['name']);
 					$tmp_name = str_replace(' ','_', $name);
 					$name = (!empty($user->lang[$tmp_name])) ? $user->lang[$tmp_name] : $k_menus[$i]['name'];
+					$name = utf8_htmlspecialchars($name);
+					$link_target = portal_sanitize_menu_target($k_menus[$i]['link_to']);
 
-					if (strstr($k_menus[$i]['link_to'], 'http'))
+					if (preg_match('#^https?://#i', $link_target))
 					{
-						$link = ($k_menus[$i]['link_to']) ? $k_menus[$i]['link_to'] : '';
+						$link = $link_target;
 					}
 					else
 					{
 						if ($k_menus[$i]['append_sid'])
 						{
-							if (strpos($k_menus[$i]['link_to'], 'hash')) // allow Mark forums read //
+							if (strpos($link_target, 'hash') !== false) // allow Mark forums read //
 							{
 								$link = ($user->data['is_registered'] || $config['load_anon_lastread']) ? append_sid("{$phpbb_root_path}index.$phpEx", 'hash=' . generate_link_hash('global') . '&amp;mark=forums') : '';
 							}
 							else
 							{
-								$link = ($auth->acl_get('a_') && !empty($user->data['is_registered'])) ? append_sid("{$phpbb_root_path}{$k_menus[$i]['link_to']}", false, true, $user->session_id) : '';
+								$link = ($link_target && $auth->acl_get('a_') && !empty($user->data['is_registered'])) ? append_sid("{$phpbb_root_path}{$link_target}", false, true, $user->session_id) : '';
 							}
 						}
 						else
 						{
-							$link = ($k_menus[$i]['link_to']) ? append_sid("{$phpbb_root_path}" . $k_menus[$i]['link_to'] . $u_id) : '';
+							$link = $link_target ? append_sid("{$phpbb_root_path}" . $link_target . $u_id) : '';
 						}
 					}
+					$link = utf8_htmlspecialchars(html_entity_decode($link, ENT_QUOTES, 'UTF-8'));
+					$menu_icon = basename(str_replace('\\', '/', $k_menus[$i]['menu_icon']));
+					$menu_icon = preg_match('/^[a-z0-9_.-]+\.(?:gif|jpe?g|png|svg)$/i', $menu_icon) ? $menu_icon : '';
+					$menu_icon_html = $menu_icon
+						? '<img src="' . utf8_htmlspecialchars($menu_image_path . $menu_icon) . '" height="16" width="16" alt="" />'
+						: '<img src="' . utf8_htmlspecialchars($menu_image_path . 'spacer.gif') . '" height="15" width="15" alt="" />';
 
 					$is_sub_heading = ($k_menus[$i]['sub_heading']) ? true : false;
 
@@ -645,7 +703,7 @@ if (!function_exists('generate_menus'))
 						break;
 
 						case 2:
-							$link_option = ' onclick="window.open(this.href); return false;"';
+							$link_option = 'target="_blank" rel="noopener noreferrer"';
 						break;
 
 						default:
@@ -660,7 +718,7 @@ if (!function_exists('generate_menus'))
 							'PORTAL_LINK_OPTION'	=> $link_option,
 							'PORTAL_MENU_HEAD_NAME'	=> ($is_sub_heading) ? $name : '',
 							'PORTAL_MENU_NAME' 		=> $name,
-							'PORTAL_MENU_ICON'		=> ($k_menus[$i]['menu_icon']) ? '<img src="' . $menu_image_path . $k_menus[$i]['menu_icon'] . '" height="16" width="16" alt="" />' : '<img src="' . $menu_image_path . 'spacer.gif" height="15px" width="15px" alt="" />',
+							'PORTAL_MENU_ICON'		=> $menu_icon_html,
 							'U_PORTAL_MENU_LINK' 	=> ($k_menus[$i]['sub_heading']) ? '' : $link,
 							'S_SOFT_HR'				=> $k_menus[$i]['soft_hr'],
 							'S_SUB_HEADING' 		=> ($k_menus[$i]['sub_heading']) ? true : false,
@@ -672,7 +730,7 @@ if (!function_exists('generate_menus'))
 							'PORTAL_LINK_OPTION'	=> $link_option,
 							'PORTAL_MENU_HEAD_NAME'	=> ($is_sub_heading) ? $name : '',
 							'PORTAL_MENU_NAME' 		=> $name,
-							'PORTAL_MENU_ICON'		=> ($k_menus[$i]['menu_icon']) ? '<img src="' . $menu_image_path . $k_menus[$i]['menu_icon'] . '" height="16" width="16" alt="" />' : '<img src="' . $menu_image_path . 'spacer.gif" height="15px" width="15px" alt="" />',
+							'PORTAL_MENU_ICON'		=> $menu_icon_html,
 							'U_PORTAL_MENU_LINK' 	=> ($k_menus[$i]['sub_heading']) ? '' : $link,
 							'S_SOFT_HR'				=> $k_menus[$i]['soft_hr'],
 							'S_SUB_HEADING' 		=> ($k_menus[$i]['sub_heading']) ? true : false,
@@ -685,7 +743,7 @@ if (!function_exists('generate_menus'))
 							'PORTAL_LINK_MENU_HEAD_NAME'	=> ($is_sub_heading) ? $name : '',
 							'PORTAL_LINK_MENU_NAME'			=> ($is_sub_heading) ? '' : $name,
 							'U_PORTAL_LINK_MENU_LINK'		=> ($is_sub_heading) ? '' : $link,
-							'PORTAL_LINK_MENU_ICON'			=> ($k_menus[$i]['menu_icon'] == 'NONE') ? '' : '<img src="' . $menu_image_path . $k_menus[$i]['menu_icon'] . '" alt="" />',
+							'PORTAL_LINK_MENU_ICON'			=> ($k_menus[$i]['menu_icon'] == 'NONE') ? '' : $menu_icon_html,
 							'S_SOFT_HR'						=> $k_menus[$i]['soft_hr'],
 							'S_SUB_HEADING'					=> ($k_menus[$i]['sub_heading']) ? true : false,
 						));

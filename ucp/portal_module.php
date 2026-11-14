@@ -62,7 +62,7 @@ class portal_module
 		$form_key = 'ucp_portal';
 		add_form_key($form_key);
 
-		$user_id = $user->data['user_id'];
+		$user_id = (int) $user->data['user_id'];
 
 		$row = get_current_block_layout($user_id);
 
@@ -74,7 +74,7 @@ class portal_module
 				$template->assign_vars(array(
 					'ARRANGE_ICO'      => $user->lang['UCP_K_INFO_ARRANGE'],
 					'L_ARRANGE_ICON'   => $user->lang['ARRANGE_ICON'],
-					'U_PORTAL_ARRANGE' => append_sid("{$phpbb_root_path}portal.$phpEx", "arrange=1"),
+					'U_PORTAL_ARRANGE' => append_sid("{$phpbb_root_path}app.$phpEx/portal.php", 'arrange=1'),
 					'LINK_IMG'         => '<img src="' . $phpbb_root_path . 'ext/phpbbireland/portal/images/portal_ucp_images/arrange.gif" alt="" />',
 				));
 			break;
@@ -106,13 +106,6 @@ class portal_module
 				));
 			break;
 
-			case 'width':
-				$template->assign_vars(array(
-					'CHECKBOX'       => 1,
-					'L_SWITCH_INFO'  => $user->lang['UCP_K_INFO_WIDTH'],
-				));
-			break;
-
 			default:
 			break;
 		}
@@ -128,15 +121,15 @@ class portal_module
 
 			if ($mode == 'edit')
 			{
-				$user_left_blocks = $request->variable('left_blocks', '');
-				$user_center_blocks = $request->variable('center_blocks', '');
-				$user_right_blocks = $request->variable('right_blocks', '');
+				$user_left_blocks = portal_normalize_block_list($request->variable('left_blocks', ''));
+				$user_center_blocks = portal_normalize_block_list($request->variable('center_blocks', ''));
+				$user_right_blocks = portal_normalize_block_list($request->variable('right_blocks', ''));
 
 				$sql = "UPDATE " . USERS_TABLE . "
 					SET user_left_blocks = '" . $db->sql_escape($user_left_blocks) . "',
 						user_center_blocks = '" . $db->sql_escape($user_center_blocks) . "',
 						user_right_blocks = '" . $db->sql_escape($user_right_blocks) . "'
-					WHERE user_id =  " . $user->data['user_id'];
+					WHERE user_id =  " . (int) $user->data['user_id'];
 
 				$result = $db->sql_query_limit($sql, 1);
 
@@ -158,7 +151,7 @@ class portal_module
 				{
 					$sql = "UPDATE " . USERS_TABLE . "
 						SET user_left_blocks = '', user_center_blocks = '', user_right_blocks = ''
-						WHERE user_id = " . $user_id;
+						WHERE user_id = " . (int) $user_id;
 					$result = $db->sql_query_limit($sql, 1);
 
 					$template->assign_vars(array(
@@ -192,7 +185,12 @@ class portal_module
 
 function get_current_block_layout($id)
 {
-	global $config, $db, $user, $auth, $template, $phpbb_root_path, $phpEx, $phpbb_root_path;
+	global $db;
+	$row = array(
+		'user_left_blocks' => '',
+		'user_center_blocks' => '',
+		'user_right_blocks' => '',
+	);
 
 	$sql = "SELECT user_id, user_left_blocks, user_center_blocks, user_right_blocks
 		FROM " . USERS_TABLE . "
@@ -209,13 +207,16 @@ function get_current_block_layout($id)
 
 function get_default_block_layout($id)
 {
-	global $config, $db, $user, $auth, $template, $phpbb_root_path, $phpEx, $phpbb_root_path;
-
+	global $db, $user;
 	global $dataleft, $datacenter, $dataright;
+	$dataleft = $datacenter = $dataright = '';
 
 	$existing = get_current_block_layout($id);
+	$existing_left = array_filter(array_map('intval', explode(',', portal_normalize_block_list($existing['user_left_blocks']))));
+	$existing_center = array_filter(array_map('intval', explode(',', portal_normalize_block_list($existing['user_center_blocks']))));
+	$existing_right = array_filter(array_map('intval', explode(',', portal_normalize_block_list($existing['user_right_blocks']))));
 
-	$sql = "SELECT id, position, html_file_name, view_pages, view_all
+	$sql = "SELECT id, position, html_file_name, view_groups, view_all
 		FROM " . K_BLOCKS_TABLE . "
 		WHERE active = 1
 			AND view_pages <> '0'";
@@ -224,13 +225,14 @@ function get_default_block_layout($id)
 	{
 		while ($row = $db->sql_fetchrow($result))
 		{
-			if ($row['view_all'] == '1' || strpos($row['view_pages'], $user->data['group_id']))
+			$view_groups = array_filter(array_map('intval', explode(',', $row['view_groups'])));
+			if ($row['view_all'] == '1' || in_array((int) $user->data['group_id'], $view_groups, true))
 			{
 				if ($row['position'] == 'L')
 				{
 //					$count = count($row['view_pages']);
 
-					if (strpos($existing['user_left_blocks'], $row['id']))
+					if (in_array((int) $row['id'], $existing_left, true))
 					{
 						$dataleft .= $row['id'] . ',';
 					}
@@ -243,7 +245,7 @@ function get_default_block_layout($id)
 				}
 				else if ($row['position'] == 'C')
 				{
-					if (!strpos($existing['user_center_blocks'], $row['id']))
+					if (!in_array((int) $row['id'], $existing_center, true))
 					{
 						$datacenter .= '<strong>';
 						$datacenter .= $row['id'];
@@ -256,7 +258,7 @@ function get_default_block_layout($id)
 				}
 				else if ($row['position'] == 'R')
 				{
-					if (!strpos($existing['user_right_blocks'], $row['id']))
+					if (!in_array((int) $row['id'], $existing_right, true))
 					{
 						$dataright .= '<strong>';
 						$dataright .= $row['id'];

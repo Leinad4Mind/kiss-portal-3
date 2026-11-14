@@ -58,6 +58,9 @@ class helper
 	*/
 	protected $root_path;
 
+	/** @var string */
+	protected $includes_path;
+
 	/**
 	* phpBB path helper
 	* @var \phpbb\path_helper

@@ -34,7 +34,6 @@ class pages_module
 
 		$img_path  = $phpbb_root_path . 'ext/phpbbireland/portal/images/block_images/block/';
 		$img_path_acp = $phpbb_root_path . 'ext/phpbbireland/portal/adm/images/';
-		$portal_js = $phpbb_root_path . 'ext/phpbbireland/portal/js/portal.js';
 
 		$user->add_lang_ext('phpbbireland/portal', 'k_pages');
 		$this->tpl_name = 'acp_pages';
@@ -44,8 +43,8 @@ class pages_module
 		if (!class_exists('sgp_functions_admin'))
 		{
 			require($phpbb_root_path . 'ext/phpbbireland/portal/includes/sgp_functions_admin.' . $phpEx);
-			$sgp_functions_admin = new sgp_functions_admin();
 		}
+		$sgp_functions_admin = new sgp_functions_admin();
 
 		$mode = $request->variable('mode', '');
 		$page_id = $request->variable('page_id', 0);
@@ -104,14 +103,19 @@ class pages_module
 			$mod_pages = str_replace(' ', '', $mod_pages);
 
 			// has mod folder been updated/modified //
-			if (strcmp($mod_pages, $k_config['k_mod_folders'] != 0))
+			if (strcmp($mod_pages, $k_config['k_mod_folders']) !== 0)
 			{
 				$mods_folder_array = explode(',', $mod_pages);
 
 				foreach($mods_folder_array as $folder)
 				{
 					$folder = trim($folder);
-					if (!file_exists($phpbb_root_path . $folder))
+					if ($folder === '')
+					{
+						continue;
+					}
+
+					if (!is_safe_page_path($folder) || !is_dir($phpbb_root_path . $folder))
 					{
 						$submit = false;
 						$mod_pages = '';
@@ -165,7 +169,7 @@ class pages_module
 				else
 				{
 					confirm_box(false, sprintf("%s (%s)", $user->lang['DELETE_FROM_LIST'], $page_name), build_hidden_fields(array(
-						'id'      => $page_id,
+						'page_id' => $page_id,
 						'mode'    => $mode,
 						'action'  => 'delete'))
 					);
@@ -181,10 +185,10 @@ class pages_module
 				if ($submit)
 				{
 					// drop extension
-					$tag_id = str_replace('.php', '', $tag_id);
+					$tag_id = preg_replace('/\.php$/i', '', $tag_id);
 
 					// skip the spacer //
-					if ($tag_id == '..')
+					if (!is_safe_page_path($tag_id))
 					{
 						$template->assign_vars(array(
 							'S_OPTION' => 'processing', // not lang var
@@ -220,6 +224,20 @@ class pages_module
 			case 'land':
 
 				$page_name = get_page_filename($page_id);
+
+				if ($page_name === '')
+				{
+					trigger_error($user->lang['ERROR_PORTAL_PAGES'], E_USER_WARNING);
+				}
+
+				if (!confirm_box(true))
+				{
+					confirm_box(false, $user->lang['LANDING_PAGE_SET'] . ': ' . $page_name, build_hidden_fields(array(
+						'page_id' => $page_id,
+						'mode'    => 'land',
+					)));
+					break;
+				}
 
 				$sgp_functions_admin->sgp_acp_set_config('k_landing_page', $page_name, 1);
 
@@ -262,7 +280,7 @@ function get_pages_data()
 
 	while ($row = $db->sql_fetchrow($result))
 	{
-		$current_pages = $row['page_name'];
+		$current_pages[] = $row['page_name'];
 
 		$template->assign_block_vars('phpbbpages', array(
 			'S_PAGE_ID'     => $row['page_id'],
@@ -286,107 +304,77 @@ function get_pages_data()
 */
 function get_all_available_files()
 {
-	global $phpbb_root_path, $phpEx, $template, $dirslist, $db, $user, $k_config, $phpbb_admin_path, $module_id;
+	global $phpbb_root_path, $phpEx, $template, $db, $user, $k_config, $phpbb_admin_path, $module_id;
 
-	include($phpbb_root_path . 'ext/phpbbireland/portal/includes/sgp_functions.'.$phpEx);
+	$illegal_files = array("app.$phpEx", "common.$phpEx", "report.$phpEx", "feed.$phpEx", "cron.$phpEx", "config.$phpEx", "csv.$phpEx", "style.$phpEx", "sgp_ajax.$phpEx", "sgpical.$phpEx", "rss.$phpEx");
+	$current_files = array();
+	$available_files = array();
 
-	$page_name = '';
-	$dirslist = $store = ' ';
-
-	$illegal_files = array(".htaccess", "app.$phpEx", "common.$phpEx", "report.$phpEx", "feed.$phpEx", "cron.$phpEx", "config.$phpEx", "csv.$phpEx", "style.$phpEx", "sgp_ajax.$phpEx", "sgpical.$phpEx", "rss.$phpEx");
-
-	$sql = 'SELECT page_name
-		FROM ' . K_PAGES_TABLE . '
-		ORDER BY page_name ASC';
+	$sql = 'SELECT page_name FROM ' . K_PAGES_TABLE;
 	$result = $db->sql_query($sql);
-
 	while ($row = $db->sql_fetchrow($result))
 	{
-		$page_name .= $row['page_name'] . '.php, ';
+		$current_files[] = $row['page_name'] . '.' . $phpEx;
 	}
 	$db->sql_freeresult($result);
 
-	$arr = explode(', ', $page_name);
-
-	// grab php files in phpbb_root_path //
-	$dirs = dir($phpbb_root_path);
-	while ($file = $dirs->read())
+	$folders = array('');
+	foreach (explode(',', isset($k_config['k_mod_folders']) ? $k_config['k_mod_folders'] : '') as $folder)
 	{
-		if ($file != '.' && $file != '..' && stripos($file, ".php") && !stripos($file, ".bak") && !in_array($file, $arr, true))
+		$folder = trim(str_replace('\\', '/', $folder), '/');
+		if ($folder === '')
 		{
-			if (!in_array($file, $illegal_files))
-			{
-				$dirslist .= "$file ";
-			}
-		}
-	}
-	closedir($dirs->handle);
-
-	// grab files in phpbb_root_path/mod folders //
-	$dirs = dir($phpbb_root_path);
-	$mods_folder_array = explode(',', $k_config['k_mod_folders']);
-
-	while ($file = $dirs->read())
-	{
-		if (in_array($file, $mods_folder_array, true) && $file == '.' || $file == '..' && $k_config['k_mod_folders'] != '')
-		{
-			$mods_folder_array = explode(',', $k_config['k_mod_folders']);
-
-			foreach($mods_folder_array as $folder)
-			{
-				$folder = trim($folder);
-
-				if (!file_exists($phpbb_root_path . $folder))
-				{
-					trigger_error($user->lang['NO_MOD_FOLDER'] . $folder . adm_back_link(append_sid("{$phpbb_admin_path}index.$phpEx", "i={$module_id}&amp;mode=manage")), E_USER_WARNING);
-				}
-
-				$dirs = dir($phpbb_root_path . $folder);
-
-				while ($file = $dirs->read())
-				{
-					if ($file != '.' && $file != '..' && stripos($file, ".php") && !stripos($file, ".bak") && !in_array($folder .'/'. $file, $arr, true))
-					{
-						$illegal_files_array = array($folder . '/' . 'dummy.' . $phpEx);
-
-						$temp = $folder . '/' . $file;
-
-						if (!in_array($temp, $illegal_files_array, true))
-						{
-							$store .= $temp. " ";
-						}
-					}
-				}
-			}
-			$dirslist .= $store;
+			continue;
 		}
 
+		if (!is_safe_page_path($folder) || !is_dir($phpbb_root_path . $folder))
+		{
+			trigger_error($user->lang['NO_MOD_FOLDER'] . $folder . adm_back_link(append_sid("{$phpbb_admin_path}index.$phpEx", "i={$module_id}&amp;mode=manage")), E_USER_WARNING);
+		}
+		$folders[] = $folder;
 	}
 
-	closedir($dirs->handle);
-
-	$dirslist = explode(" ", $dirslist);
-	//sort($dirslist);
-
-	$phpbb_files = '';
-	$files_found = 0;
-
-	// As we use onchange event we need an empty line first //
-	$phpbb_files .= '<option value="' . ' ' . '">' . ' ' . '</option>';
-
-	foreach ($dirslist as $file)
+	foreach ($folders as $folder)
 	{
-		if ($file != '')
+		$directory = new \DirectoryIterator($phpbb_root_path . $folder);
+		foreach ($directory as $file_info)
 		{
-			$files_found++;
-			$phpbb_files .= '<option value="' . $file  . '"' . (($files_found == 0) ? ' selected="selected"' : '') . '>' . $file . '</option>';
+			if (!$file_info->isFile() || strtolower($file_info->getExtension()) !== strtolower($phpEx))
+			{
+				continue;
+			}
+
+			$file = ($folder === '' ? '' : $folder . '/') . $file_info->getFilename();
+			if (in_array($file_info->getFilename(), $illegal_files, true) || in_array($file, $current_files, true) || basename($file) === 'dummy.' . $phpEx)
+			{
+				continue;
+			}
+			$available_files[] = $file;
 		}
+	}
+
+	$available_files = array_values(array_unique($available_files));
+	sort($available_files, SORT_NATURAL | SORT_FLAG_CASE);
+	$files_found = count($available_files);
+	$phpbb_files = '<option value=""></option>';
+	foreach ($available_files as $file)
+	{
+		$safe_file = utf8_htmlspecialchars($file);
+		$phpbb_files .= '<option value="' . $safe_file . '">' . $safe_file . '</option>';
 	}
 
 	$template->assign_vars(array(
 		'S_PHPBB_FILES' => $phpbb_files,
 		'S_FILES_FOUND' => $files_found,
 	));
+}
+
+function is_safe_page_path($path)
+{
+	$path = str_replace('\\', '/', trim($path));
+	return $path !== ''
+		&& strpos($path, '..') === false
+		&& preg_match('#^[a-z0-9_.-]+(?:/[a-z0-9_.-]+)*$#i', $path);
 }
 
 /**
@@ -396,14 +384,16 @@ function get_page_filename($page_id)
 {
 	global $db, $template;
 
-	$sql = 'SELECT *
+	$sql = 'SELECT page_id, page_name
 		FROM ' . K_PAGES_TABLE . '
-		WHERE page_id = ' . $db->sql_escape($page_id);
+		WHERE page_id = ' . (int) $page_id;
 	$result = $db->sql_query($sql);
+	$row = $db->sql_fetchrow($result);
+	$db->sql_freeresult($result);
 
-	if ($result = $db->sql_query($sql))
+	if (!$row)
 	{
-		$row = $db->sql_fetchrow($result);
+		return '';
 	}
 
 	$template->assign_vars(array(
@@ -411,7 +401,5 @@ function get_page_filename($page_id)
 		'PAGE_NAME' => $row['page_name'],
 	));
 
-	$db->sql_freeresult($result);
-
-	return($row['page_name']);
+	return $row['page_name'];
 }

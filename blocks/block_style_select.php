@@ -26,43 +26,26 @@ if ($user->data['user_id'] == ANONYMOUS)
 global $user, $request, $template, $phpbb_root_path, $phpEx, $db, $k_blocks;
 
 
-$current_style = $user->data['user_style'];				// the current style
-$new_style = $request->variable('style', 0);			// selected style
-$make_permanent = $request->variable('mp', 'false');	// make style permanent
-
-$allow_style_change = ($config['override_user_style']) ? false : true;
-$change_db_style = ($allow_style_change && $make_permanent) ? true : false;
-
-if ($make_permanent == 'true' && $new_style != $current_style && $change_db_style)
-{
-	$sql = "UPDATE " . USERS_TABLE . "
-		SET user_style = " . (int) $new_style . "
-		WHERE user_id = " . (int) $user->data['user_id'];
-	$db->sql_query($sql);
-}
-
 $style_count = 0;
 $style_select = '';
-$this_page = explode("/", $user->page['page']);
-$this_page = explode(".", $this_page[1]);
-
-if ($this_page == 'index')
+$this_page = ltrim((string) parse_url($user->page['page'], PHP_URL_PATH), '/');
+if (!preg_match('#^(?:app\.' . preg_quote($phpEx, '#') . '/)?[a-z0-9_/-]+\.' . preg_quote($phpEx, '#') . '$#i', $this_page))
 {
-	$this_page = 'index' . $phpEx;
+	$this_page = 'index.' . $phpEx;
 }
 
 // rebuild forum and topic (viewforum, viewtopic) //
-$appends = '';
+$appends = array();
 $fo = $request->variable('f', 0);
 $to = $request->variable('t', 0);
 
 if ($fo != 0)
 {
-	$appends = 'f=' . $fo;
+	$appends[] = 'f=' . $fo;
 }
 if ($to != 0)
 {
-	$appends .= '&amp;t=' . $to;
+	$appends[] = 't=' . $to;
 }
 
 foreach ($k_blocks as $blk)
@@ -83,19 +66,11 @@ $result = $db->sql_query($sql, $block_cache_time);
 
 while ($row = $db->sql_fetchrow($result))
 {
-	$style = $request->variable('style', 0);
-
-	if ($style)
-	{
-		$url = str_replace('style=' . $style, 'style=' . $row['style_id'], append_sid("{$phpbb_root_path}{$this_page[0]}", $appends));
-	}
-	else
-	{
-		$url = append_sid("{$phpbb_root_path}{$this_page[0]}", 'style=' . $row['style_id'] . $appends);
-	}
+	$query = array_merge(array('style=' . (int) $row['style_id']), $appends);
+	$url = append_sid("{$phpbb_root_path}{$this_page}", implode('&amp;', $query));
 	++$style_count;
 
-	$style_select .= '<option value="' . $url . '"' . ($row['style_id'] == $user->data['user_style'] ? ' selected="selected"' : '') . '>' . strip_tags(sgp_checksize ($row['style_name'], 16)) . '</option>';
+	$style_select .= '<option value="' . utf8_htmlspecialchars($url) . '"' . ($row['style_id'] == $user->data['user_style'] ? ' selected="selected"' : '') . '>' . utf8_htmlspecialchars(sgp_checksize($row['style_name'], 16)) . '</option>';
 }
 $db->sql_freeresult($result);
 
@@ -106,5 +81,5 @@ if (strlen($style_select))
 
 $template->assign_vars(array(
 	'STYLE_COUNT'	=> $style_count,
-	'S_SHOW_PERM'	=> ($this_page[0] == 'portal') ? true : false,
+	'S_SHOW_PERM'	=> false,
 ));

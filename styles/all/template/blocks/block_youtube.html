@@ -1,10 +1,4 @@
 
-<!-- IF S_STYLE_SPECIFIC_VERSION -->
-<link type="text/css" href="{MOD_USER_TEMPLATE_PATH}/template/js/jquery_ui/jquery-ui.css" rel="stylesheet" />
-<!-- ELSE -->
-<link type="text/css" href="./ext/phpbbireland/portal/js/jquery/jquery_ui/jquery-ui.css" rel="stylesheet" />
-<!-- ENDIF -->
-
 <div class="block_data">
 
 	<div class="tcontainer">
@@ -33,13 +27,13 @@
 
 		<!-- IF video_loop_row.S_ROW_COUNT is even -->
 			<div class="trow">
-				<span class="tleft bg2 youtube2" style="width:33%;"><a class="youtube" href="#" rel="{video_loop_row.VIDEO_LINK}" title="">{video_loop_row.VIDEO_TITLE}</a></span>
+				<span class="tleft bg2 youtube2" style="width:33%;"><a class="youtube" href="https://www.youtube.com/watch?v={video_loop_row.VIDEO_LINK}" target="_blank" rel="noopener noreferrer">{video_loop_row.VIDEO_TITLE}</a></span>
 				<span class="tleft bg2 youtube2" style="width:29%; ">{video_loop_row.VIDEO_WHO} </span>
 				<span class="tleft bg2 youtube2" style="width:18%; ">{video_loop_row.VIDEO_CAT}</span>
 				<span class="tleft bg2 youtube2" style="width:10%; ">{video_loop_row.VIDEO_POSTER}</span>
 				<span class="tleft bg2 ximg" style="width:auto; height: 15px; padding:1px; text-align:right">
-					<a class="youtube" href="#" rel="{video_loop_row.VIDEO_LINK}" title="{video_loop_row.VIDEO_WHO}: {video_loop_row.VIDEO_TITLE}">
-						<img src="http://img.youtube.com/vi/{video_loop_row.VIDEO_LINK}/default.jpg" alt="" width="15" height="15" />
+					<a class="youtube" href="https://www.youtube.com/watch?v={video_loop_row.VIDEO_LINK}" target="_blank" rel="noopener noreferrer" title="{video_loop_row.VIDEO_WHO}: {video_loop_row.VIDEO_TITLE}">
+						<img src="https://img.youtube.com/vi/{video_loop_row.VIDEO_LINK}/default.jpg" alt="" width="15" height="15" />
 					</a>
 				</span>
 			</div>
@@ -52,13 +46,13 @@
 			<div class="tcontainer">
 			<!-- ELSE -->
 			<div class="trow">
-				<span class="tleft bg1 youtube2" style="width:33%;"><a class="youtube" href="#" rel="{video_loop_row.VIDEO_LINK}" title="">{video_loop_row.VIDEO_TITLE}</a></span>
+				<span class="tleft bg1 youtube2" style="width:33%;"><a class="youtube" href="https://www.youtube.com/watch?v={video_loop_row.VIDEO_LINK}" target="_blank" rel="noopener noreferrer">{video_loop_row.VIDEO_TITLE}</a></span>
 				<span class="tleft bg1 youtube2" style="width:29%;">{video_loop_row.VIDEO_WHO} </span>
 				<span class="tleft bg1 youtube2" style="width:18%;">{video_loop_row.VIDEO_CAT}</span>
 				<span class="tleft bg1 youtube2" style="width:10%;">{video_loop_row.VIDEO_POSTER}</span>
 				<span class="tleft bg1 ximg"     style="width:auto; height: 15px; padding:1px; text-align:right">
-					<a class="youtube" href="#" rel="{video_loop_row.VIDEO_LINK}" title="{video_loop_row.VIDEO_WHO}: {video_loop_row.VIDEO_TITLE}">
-						<img src="http://img.youtube.com/vi/{video_loop_row.VIDEO_LINK}/default.jpg" alt="" width="15" height="15" />
+					<a class="youtube" href="https://www.youtube.com/watch?v={video_loop_row.VIDEO_LINK}" target="_blank" rel="noopener noreferrer" title="{video_loop_row.VIDEO_WHO}: {video_loop_row.VIDEO_TITLE}">
+						<img src="https://img.youtube.com/vi/{video_loop_row.VIDEO_LINK}/default.jpg" alt="" width="15" height="15" />
 					</a>
 				</span>
 			</div>

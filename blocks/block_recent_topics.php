@@ -110,7 +110,7 @@ while ($row = $db->sql_fetchrow($result))
 		// Get forum name for this postid
 		$sql2 = "SELECT forum_name
 			FROM " . FORUMS_TABLE . "
-			WHERE forum_id = " . $row['forum_id'] . "
+			WHERE forum_id = " . (int) $row['forum_id'] . "
 			LIMIT " . 1;
 		if (!$my_result = $db->sql_query($sql2, 300))
 		{

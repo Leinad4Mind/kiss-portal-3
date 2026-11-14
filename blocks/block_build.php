@@ -109,8 +109,8 @@ if ($this_page_name == 'portal' || $this_page_name == 'index')
 			if (!$user->data['user_last_privmsg'] || $user->data['user_last_privmsg'] > $user->data['session_last_visit'])
 			{
 				$sql = 'UPDATE ' . USERS_TABLE . '
-					SET user_last_privmsg = ' . $user->data['session_last_visit'] . '
-					WHERE user_id = ' . $user->data['user_id'];
+					SET user_last_privmsg = ' . (int) $user->data['session_last_visit'] . '
+					WHERE user_id = ' . (int) $user->data['user_id'];
 				$db->sql_query($sql);
 
 				$s_privmsg_new = true;

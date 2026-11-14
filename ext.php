@@ -14,4 +14,16 @@ namespace phpbbireland\portal;
 
 class ext extends \phpbb\extension\base
 {
+	/**
+	 * Only enable this release on the platform versions it was audited against.
+	 *
+	 * @return bool
+	 */
+	public function is_enableable()
+	{
+		return PHP_VERSION_ID >= 70400
+			&& defined('PHPBB_VERSION')
+			&& phpbb_version_compare(PHPBB_VERSION, '3.3.19', '>=')
+			&& phpbb_version_compare(PHPBB_VERSION, '4.0.0-dev', '<');
+	}
 }

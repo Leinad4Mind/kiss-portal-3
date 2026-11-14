@@ -791,3 +791,15 @@ table.table1 .flag { text-align: center; width: 30px; }
 span.pimg.cat_images { clear:both; float:left }
 
 .small_avatar img { max-height: 16px; width: auto }
+.portal-block-dragging {
+	opacity: 0.45;
+}
+
+.handle {
+	cursor: move;
+	cursor: grab;
+}
+
+.handle:active {
+	cursor: grabbing;
+}

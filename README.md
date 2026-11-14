@@ -1,61 +1,65 @@
-#portal
+# Kiss Portal Extension
 
-Fully integrated portal for phpBB 3.1.x
+A configurable portal extension for phpBB.
 
-**Development Status:** [![Build Status](https://travis-ci.org/phpbbireland/portal.svg)](https://travis-ci.org/phpbbireland/portal)
+## Requirements
 
-No more travis errors but no pass?
+- phpBB 3.3.19
+- PHP 7.4 or newer
 
-## Tested with phpBB 3.1.9
-    • Quite a few updates to the portal code including some additions to the code and minor fixes...
-    • Note, the process of updating many files at one time, make commenting impractical.
-    • Added a sample style (Olympus).  
-  
-*If you have already installed and want to update, please disable the extension, remove it (Delete Data) and reinstall as the latest updates add an extra database table and may changes others... A complete reinstall in the only way to ensure everything works.*
-...  
+The extension currently targets phpBB 3.3 only and will refuse to enable on
+older phpBB versions.
 
-**Setting up:**  
-The main menu options for Admin and Registered members need to be set up (we can't do this automatically as we don't know if you install used default group id's or is an upgrade, in which case id's will differ).  
+## Installation
 
-The links block is disabled but can be enabled from: ACP > PORTAL > Manage right blocks (click on edit block icon for the links block).  
+1. Copy this directory to `ext/phpbbireland/portal/` in the phpBB installation.
+2. In the ACP, open **Customise > Manage extensions**.
+3. Find **Kiss Portal Extension** and select **Enable**.
+4. Purge the phpBB cache after changing styles or templates.
 
-**Cache:**  
-At the moment deleting cache automatically after making changes is not enabled, please manually purge cache if you make changes to settings.  
+For an existing installation, back up the database and extension files before
+updating. Disable the extension, replace its files, enable it again, then purge
+the cache. Do not select **Delete data** unless all portal configuration and
+content may be removed.
 
-**Tutorials:**  
-I intend to add some new Youtube videos on how to set up and use the Portal (you may find some old videos which are still relavent).  
+## Configuration
 
-    • Managing Portal Block in ACP (TBA)  
-    • Managing Menus in ACP (TBA)  
-    • Block visibility (group assess) TBA      
-    • Creating Custom Blocks (TBA)  
-    • Arrange Blocks (yet to be implemented for 3.1) (https://www.youtube.com/watch?v=pkEWG6yq4as)  
+Portal blocks, menus, pages and permissions are managed under **ACP > Portal**.
+Review group visibility after installation because group IDs can differ between
+phpBB installations.
 
-Mike
+## Feature status
 
-## Installation:
-    • Copy the entire contents from the unzipped folder to "phpBB/ext/phpbbireland/portal/".
-    • Navigate in the ACP to "Customise -> Manage extensions".
-    • Find "Portal" under "Disabled Extensions" and click "Enable".
+- Signed-in users with the portal permission can arrange blocks from the UCP.
+  The layout is saved to their phpBB user profile after drag and drop.
+- The optional poll block displays results from the post ID configured in its
+  ACP variables. Voting is deliberately handled by the linked phpBB topic so
+  phpBB keeps control of permissions, CSRF checks and vote changes.
+- The random-image block supports GIF, JPEG, PNG and WebP files placed in
+  `images/random_images/`.
+- The style selector provides a temporary preview. Permanent style selection
+  remains in phpBB's UCP preferences.
+- The links-menu block remains disabled by default because it is optional site
+  content; it can be enabled and configured in the ACP.
+- The obsolete fixed-width selector, Highslide integration and bundled legacy
+  JavaScript libraries were removed. Current phpBB styles are responsive.
 
-## Uninstalling:
-    • Navigate in the ACP to "Customise -> Manage extensions".
-    • Click the "Disable" link for "Portal".
-    • To permanently uninstall, click "Delete Data", then delete the "portal" folder from "phpBB/ext/phpbbireland/".
+## Security notes
+
+- Administrative changes use phpBB form keys or confirmation tokens.
+- Portal layout values and dynamic block/template filenames are validated before
+  they are used in database queries or filesystem paths.
+- Menu URLs are restricted to safe relative paths or HTTP(S) links.
+- Block arrangement and visibility use dependency-free JavaScript. Obsolete
+  remote jQuery UI, Prototype/Scriptaculous, Highslide and `eval`-based page
+  initialisation have been removed.
+
+## Uninstallation
+
+Disable the extension from **Customise > Manage extensions**. Selecting
+**Delete data** permanently removes the extension's database data. The files can
+then be removed from `ext/phpbbireland/portal/`.
 
 ## License
 
-[GPLv2](license.txt)
-
-**2018**  
-Although there is little or no interest in the Portal these days, I have not completely abandoned it.
-I update occasionally and will probably continue to do so for the foreseeable future...
-
-**As of December 2016**  
-My site is no longer maintained and has been abandoned (people have moved on)...  
-I test new releases of phpBB (every now and again) and update my files where issues arise (I haven't till now updated git)...  
-
-I had hope that someone would step up and continue developing the code alas there doesn't appear to be any interest...  
-
-What's need and will it ever happen?  
-Basically I did intend to update all the code to C++ (I write in C) but as I don't actually like C++ I didn't do it (I'm too old)...
+[GPL-2.0](license.txt)

@@ -71,9 +71,9 @@ if (!defined('POST_FORUM_URL'))
 $forum_count = $row_count = 0;
 $valid_forum_ids = array();
 
-$display_this_many = $k_config['k_recent_topics_to_display'];
+$display_this_many = (int) $k_config['k_recent_topics_to_display'];
 $except_forum_id = $k_config['k_recent_topics_search_exclude'];
-$k_recent_search_days = (isset($k_config['k_recent_search_days'])) ? $k_config['k_recent_search_days'] : 7;
+$k_recent_search_days = isset($k_config['k_recent_search_days']) ? (int) $k_config['k_recent_search_days'] : 7;
 $k_post_types = $k_config['k_post_types'];
 $k_recent_topics_per_forum = $k_config['k_recent_topics_per_forum'];
 
@@ -104,9 +104,9 @@ $style_row = ($scroll) ? 'scrollwide_' : 'staticwide_';
 
 $sql = "SELECT * FROM ". FORUMS_TABLE . " ORDER BY forum_id";
 
-$result = $db->sql_query($sql);
+$result = $db->sql_query($sql, $block_cache_time);
 
-if (!$result = $db->sql_query($sql, $block_cache_time))
+if (!$result)
 {
 	trigger_error($user->lang['ERROR_PORTAL_FORUMS'] . '111');
 }
@@ -138,18 +138,14 @@ if (count($valid_forum_ids) < 1)
 	return;
 }
 
-$where_sql = $db->sql_in_set('t.forum_id', $valid_forum_ids);
+$where_sql = $db->sql_in_set('t.forum_id', $valid_forum_ids, false, true);
 
-if ($k_post_types)
+if (!$k_post_types)
 {
-	$types_sql = '';
-}
-else
-{
-	$types_sql = "AND t.topic_type < " . POST_ANNOUNCE;
+	$where_sql .= ' AND t.topic_type < ' . (int) POST_ANNOUNCE;
 }
 
-$post_time_days = time() - 86400 * $k_recent_search_days;
+$post_time_days = (int) (time() - 86400 * $k_recent_search_days);
 
 // New code //user_avatar, user_avatar_type, user_avatar_width , user_avatar_height
 $sql_array = array(
@@ -173,10 +169,10 @@ $sql_array = array(
 	),
 
 	'WHERE'	=> $where_sql . '
-		' . $types_sql . '
 		AND p.post_id = t.topic_last_post_id
-		AND (p.post_time >= ' . $post_time_days . ' OR p.post_edit_time >= ' . $post_time_days . ')
-			ORDER BY t.forum_id, p.post_time DESC'
+		AND (p.post_time >= ' . $db->sql_escape((string) $post_time_days) . '
+			OR p.post_edit_time >= ' . $db->sql_escape((string) $post_time_days) . ')',
+	'ORDER_BY' => 't.forum_id, p.post_time DESC',
 );
 
 $sql = $db->sql_build_query('SELECT', $sql_array);

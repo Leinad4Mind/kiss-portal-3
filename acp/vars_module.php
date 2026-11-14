@@ -17,12 +17,12 @@ class vars_module
 	function main($module_id, $mode)
 	{
 		global $db, $user, $auth, $template, $cache, $request;
-		global $config, $phpbb_root_path, $phpbb_admin_path, $phpEx, $k_config, $table_prefix, $phpEx, $sgp_functions_admin;
+		global $config, $phpbb_root_path, $phpbb_admin_path, $phpEx, $k_config, $table_prefix;
 
 		include_once($phpbb_root_path . 'ext/phpbbireland/portal/config/constants.' . $phpEx);
 		include_once($phpbb_root_path . 'ext/phpbbireland/portal/helpers/tables.' . $phpEx);
 
-		if (!class_exists($sgp_functions_admin))
+		if (!class_exists(sgp_functions_admin::class))
 		{
 			include_once($phpbb_root_path . 'ext/phpbbireland/portal/includes/sgp_functions_admin.' . $phpEx);
 		}
@@ -34,6 +34,8 @@ class vars_module
 
 		add_form_key('blocks_vars');
 
+		$submit = false;
+		$var_file_name = '';
 		if ($request->is_set_post('submit'))
 		{
 			if (!check_form_key('blocks_vars'))
@@ -50,12 +52,12 @@ class vars_module
 		$mode	= $request->variable('mode', '');
 		$switch = $request->variable('switch', '');
 
-		if ($mode = 'manage' && $choice == '')
+		if ($mode === 'manage' && $choice === '')
 		{
 			$choice = 'manage';
 		}
 
-		if (isset($block))
+		if ($block > 0)
 		{
 			$sql = "SELECT id, title, var_file_name
 				FROM ". K_BLOCKS_TABLE . "
@@ -77,7 +79,7 @@ class vars_module
 
 		$block = !empty($block) ? $block : 0;
 		$action = $request->variable('action', '');
-		$submit = (isset($_POST['submit'])) ? true : false;
+		$submit = $request->is_set_post('submit');
 
 		// swicth to other var setups 11 March 2010
 		if ($switch)

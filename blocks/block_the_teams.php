@@ -34,7 +34,7 @@ $group_names = array();
 
 $limit_reached = $team_count = 0;
 $team_max_count = $k_config['k_teams_display_this_many'];
-$sql_in = explode(",", $k_config['k_teams']);
+$sql_in = array_values(array_filter(array_map('intval', explode(',', $k_config['k_teams']))));
 
 foreach ($k_blocks as $blk)
 {
@@ -47,26 +47,27 @@ foreach ($k_blocks as $blk)
 $block_cache_time = (isset($block_cache_time) ? $block_cache_time : $k_config['k_block_cache_time_default']);
 
 $sort_by = isset($k_config['k_teams_sort']) ? $k_config['k_teams_sort'] : 'g.group_name';
+$allowed_sort_columns = array('g.group_id', 'g.group_name', 'g.group_type', 'u.username');
+$sort_by = in_array($sort_by, $allowed_sort_columns, true) ? $sort_by : 'g.group_name';
 
-if ($sort_by == '' || $sort_by == 'default')
-{
-	$sort_by = 'g.group_name';
-}
-
+$sql_array = array(
+	'SELECT' => 'DISTINCT u.user_id, u.group_id, u.username, u.user_colour, u.username_clean, u.user_timezone,
+		g.group_id, g.group_name, g.group_colour, g.group_type, ug.group_id',
+	'FROM' => array(
+		USERS_TABLE => 'u',
+		GROUPS_TABLE => 'g',
+		USER_GROUP_TABLE => 'ug',
+	),
+	'WHERE' => 'ug.group_id = g.group_id
+		AND u.user_id = ug.user_id
+		AND ' . $db->sql_in_set('g.group_id', $sql_in, false, true),
+	'ORDER_BY' => $sort_by . ' ASC, u.group_id ASC, u.username_clean ASC',
+);
 if ($k_config['k_teampage_memberships'] == 0)
 {
-	$sql_refine = 'and u.group_id = g.group_id';
+	$sql_array['WHERE'] .= ' AND u.group_id = g.group_id';
 }
-else
-{
-	$sql_refine = '';
-}
-
-$sql = 'SELECT DISTINCT u.user_id, u.group_id, u.username, u.user_colour, u.username_clean, u.user_timezone, g.group_id, g.group_name, g.group_colour, g.group_type, ug.group_id
-		FROM ' . USERS_TABLE . ' u, ' . GROUPS_TABLE . ' g, ' . USER_GROUP_TABLE . ' ug
-			WHERE ug.group_id = g.group_id and u.user_id = ug.user_id ' . $sql_refine . '
-				AND ' . $db->sql_in_set('g.group_id', $sql_in) . '
-				ORDER BY ' . $sort_by . ' ASC, u.group_id ASC, u.username_clean ASC';
+$sql = $db->sql_build_query('SELECT', $sql_array);
 
 $result = $db->sql_query($sql, $block_cache_time);
 

@@ -724,27 +724,6 @@ dl.icon dt {
 	background-position: 98% 50%;		/* Position of topic icon */
 }
 
-/*
-** reset some highslide colours for this style if needed
-*/
-/*
-.highslide-html {
-	background-color: #FFFFFF;
-}
-.highslide-wrapper .highslide-header a {
-	color: gray;
-}
-.highslide-wrapper {
-   background-color: gray;
-}
-.highslide-caption {
-    border: 1px solid black;
-}
-.highslide-loading {
-    background-color: white;
-}
-*/
-
 .link_images {
 width:100%;
 margin-right:50%;

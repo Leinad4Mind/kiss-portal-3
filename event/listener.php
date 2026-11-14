@@ -40,6 +40,12 @@ class listener implements EventSubscriberInterface
 	/** @var string phpEx */
 	protected $php_ext;
 
+	/** @var string */
+	protected $page = '';
+
+	/** @var string */
+	protected $includes_path;
+
 	/**
 	* Constructor
 	*
@@ -85,8 +91,8 @@ class listener implements EventSubscriberInterface
 			//build for 'index_body_stat_blocks_after' set path to images and process code for 3 footer blocks if required//
 
 			// ACP event
-			'core.permissions'	=> 'add_categories',
 			'core.permissions'	=> 'add_permission',
+			'core.viewonline_overwrite_location' => 'viewonline_page',
 		);
 	}
 

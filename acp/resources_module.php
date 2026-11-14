@@ -36,11 +36,22 @@ class resources_module
 
 		// Set up general vars
 		$action = $request->variable('action', '');
-		$action = (isset($_POST['edit'])) ? 'edit' : $action;
-		$action = (isset($_POST['add'])) ? 'add' : $action;
-		$action = (isset($_POST['save'])) ? 'save' : $action;
-		$action = (isset($_POST['switch'])) ? 'switch' : $action;
-		$action = (isset($_POST['delete'])) ? 'delete' : $action;
+		foreach (array('edit', 'add', 'save', 'switch', 'delete') as $post_action)
+		{
+			if ($request->is_set_post($post_action))
+			{
+				$action = $post_action;
+			}
+		}
+
+		if (in_array($action, array('add', 'delete'), true))
+		{
+			$is_post_action = $request->is_set_post('add') || $request->is_set_post('delete');
+			if (!$is_post_action || !check_form_key('resources'))
+			{
+				trigger_error($user->lang['FORM_INVALID'] . adm_back_link($this->u_action), E_USER_WARNING);
+			}
+		}
 
 		// ======================================================
 		//			[ MAIN PROCESS ]
@@ -48,7 +59,7 @@ class resources_module
 
 		$add = $request->variable('add', '');
 
-		$id_list = ((isset($_POST['id_list'])) ? $request->variable('id_list', array(0)) : ((isset($_GET['id_list'])) ? $request->variable('id_list', array(0)) : array()));
+		$id_list = $request->variable('id_list', array(0));
 
 		switch ($action)
 		{
@@ -60,7 +71,12 @@ class resources_module
 
 				$new_word = $request->variable('new_word', '');
 
-				if (isset($k_config[$new_word]))
+				if (!preg_match('/^[a-z][a-z0-9_]*$/i', $new_word))
+				{
+					$process = false;
+					$template->assign_var('L_PROCESS_REPORT', $user->lang['FORM_INVALID']);
+				}
+				else if (isset($k_config[$new_word]))
 				{
 					$value = (isset($k_config[$new_word])) ? $k_config[$new_word] : '';
 					$table = $user->lang['K_CONFIG'];

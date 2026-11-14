@@ -17,15 +17,11 @@ if (!defined('IN_PHPBB'))
 }
 
 global $k_config, $phpbb_root_path, $k_blocks;
-$queries = $cached_queries = 0;
-
-$phpEx = substr(strrchr(__FILE__, '.'), 1);
 
 $randomimage = '';
-$imglist = "";
-//$ilist = static array();
-
+$block_centred = false;
 $rand_folder = $phpbb_root_path . 'ext/phpbbireland/portal/images/random_images';
+$rand_web_path = $phpbb_root_path . 'ext/phpbbireland/portal/images/random_images/';
 
 foreach ($k_blocks as $blk)
 {
@@ -36,10 +32,8 @@ foreach ($k_blocks as $blk)
 	}
 }
 
-@$handle = opendir($rand_folder);
-
 // quick report because people forget to add the image directory //
-if (!$handle)
+if (!is_dir($rand_folder) || !is_readable($rand_folder))
 {
 	$template->assign_vars(array(
 		'RANDOM_ERROR'    => true,
@@ -48,25 +42,20 @@ if (!$handle)
 	return;
 }
 
-while (($file = readdir($handle)) !== false)
+$images = array();
+foreach (new \DirectoryIterator($rand_folder) as $file_info)
 {
-	if (eregi("gif", $file) || eregi("jpg", $file) || eregi("png", $file))
+	if ($file_info->isFile() && preg_match('/\.(?:gif|jpe?g|png|webp)$/i', $file_info->getFilename()))
 	{
-		$imglist .= "$file ";
-		$ilist[] = $file;
+		$images[] = $file_info->getFilename();
 	}
 }
-closedir($handle);
 
-$imglist = explode(" ", $imglist);
-$a = sizeof($imglist)-2;
-
-mt_srand ((double) microtime() * 1000000);
-
-$random = mt_rand(0, $a);
-$image = $imglist[$random];
-
-$randomimage .= '<img src="' . $rand_folder . '/' . $image . '" alt="" />';
+if ($images)
+{
+	$image = $images[random_int(0, count($images) - 1)];
+	$randomimage = '<img src="' . utf8_htmlspecialchars($rand_web_path . rawurlencode($image)) . '" alt="" />';
+}
 
 $template->assign_vars(array(
 	'RANDOMIMAGE'         => $randomimage,

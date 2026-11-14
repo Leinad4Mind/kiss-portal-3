@@ -87,7 +87,7 @@ if ($skip_archived_forums)
 	$skip_to_year = strtotime('2012-01-01 -1 year');
 
 	$sql = "SELECT * FROM ". FORUMS_TABLE . "
-		WHERE forum_last_post_time > " . $skip_to_year . "
+		WHERE forum_last_post_time > " . (int) $skip_to_year . "
 		ORDER BY forum_id";
 
 	if (!$result = $db->sql_query($sql, 600))
@@ -134,7 +134,7 @@ if (count($valid_forum_ids) < 1)
 	return;
 }
 
-$where_sql = $db->sql_in_set('t.forum_id', $valid_forum_ids);
+$where_sql = $db->sql_in_set('t.forum_id', $valid_forum_ids, false, true);
 
 
 if ($k_top_downloads_search_days > 0)
@@ -173,7 +173,7 @@ $sql_array = array(
 	),
 
 	'WHERE'	=> $where_sql . '
-		AND ' . $db->sql_in_set('a.extension', $types) . '
+		AND ' . $db->sql_in_set('a.extension', $types, false, true) . '
 		AND t.topic_attachment = 1
 		AND p.post_id = t.topic_first_post_id
 		' . $days . '

@@ -1,13 +1,12 @@
-<div class="block_data">
-<!-- September 22, 2005 rev1 -->
-	<div style="text-align:center;">
-		<object type="application/x-shockwave-flash" data="{MOD_USER_TEMPLATE_PATH}/theme/images/clock.swf" width="125" height="125">
-			<param name="movie" value="{MOD_USER_TEMPLATE_PATH}/theme/images/clock.swf" />
-			<param name="quality" value="high" />
-			<param name="allowscriptaccess" value="samedomain" />
-			<param name="wmode" value="transparent" />
-			<param name="bgcolor" value="#F9F9F9" />
-		</object>
-	</div>
+<div class="block_data" style="text-align:center;">
+	<time class="portal-clock" style="font-size:1.5em;" aria-live="off"></time>
 </div>
+<script>
+(function() {
+	var clock = document.currentScript.previousElementSibling.querySelector('.portal-clock');
+	function updateClock() { clock.textContent = new Date().toLocaleTimeString(); }
+	updateClock();
+	window.setInterval(updateClock, 1000);
+}());
+</script>
 <!-- IF DEBUG_QUERIES --><div class="block_data">{CLOCK_DEBUG}</div><!-- ENDIF -->

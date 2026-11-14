@@ -11,7 +11,7 @@
 <!-- IDTAG START portal_layout_center 18 May 2011 -->
 
 <!-- BEGIN center_block_files -->
-	<div style="margin-top:3px;" id="<!-- IF S_ARRANGE -->BLOCK_<!-- ENDIF -->B{center_block_files.CENTER_BLOCK_ID}">
+	<div style="margin-top:3px;" id="<!-- IF S_ARRANGE -->BLOCK_{center_block_files.CENTER_BLOCK_ID}<!-- ELSE -->B{center_block_files.CENTER_BLOCK_ID}<!-- ENDIF -->">
 		{$HEADER_START_FORUM}
 			<div class="xblock_header <!-- IF S_ARRANGE -->handle<!-- ENDIF -->">
 
@@ -25,7 +25,7 @@
 
 				<!-- IF S_ARRANGE -->
 					<span class="bmove">{MOVE_IMG}</span>
-					<a href="javascript:ShowHide('B{center_block_files.CENTER_BLOCK_ID}','B_B{center_block_files.CENTER_BLOCK_ID}','BLOCKB_B{center_block_files.CENTER_BLOCK_ID}');">
+					<a href="#" onclick="ShowHide('B{center_block_files.CENTER_BLOCK_ID}','B_B{center_block_files.CENTER_BLOCK_ID}','BLOCKB_B{center_block_files.CENTER_BLOCK_ID}'); return false;">
 						<span class="bchide">{HIDE_IMG}</span>
 					</a>
 				<!-- ENDIF -->

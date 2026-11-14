@@ -13,6 +13,7 @@ class main //implements main_interface
 {
 	protected $id;
 	protected $mp;
+	protected $page_title;
 
 	/**
 	* phpBB Config object
@@ -114,7 +115,7 @@ class main //implements main_interface
 
 		if (empty($this->config['portal_enabled']))
 		{
-			redirect(append_sid("{$this->root_path}index.$this->php_ext"));
+			redirect(append_sid("{$this->phpbb_root_path}index.$this->php_ext"));
 		}
 
 		// added support for styles ... the actual work is handled by the style block //
@@ -160,7 +161,7 @@ class main //implements main_interface
 		}
 		if (!function_exists('phpbb_get_user_avatar'))
 		{
-			include($this->phpbb_root_path . 'includes/functions_display.'. $this->php_ext);
+			include_once($this->phpbb_root_path . 'includes/functions_display.'. $this->php_ext);
 		}
 
 		$this->get_portal_cache();
@@ -182,7 +183,6 @@ class main //implements main_interface
 			'L_LOGIN_LOGOUT'  => $l_login_logout,
 		));
 
-		$this->assign_images($this->config['portal_user_info'], $this->config['portal_pick_buttons']);
 		$this->page_title = $this->user->lang['PORTAL'];
 
 		return $this->helper->render('portal_body.html', $this->page_title);
@@ -203,18 +203,9 @@ class main //implements main_interface
 			'RULES'  => $basic_rules,
 		));
 
-		// Output page
-		page_header($this->user->lang['RULES_HEADER']);
-
 		$this->template->assign_vars(array(
 			'EXT_TEMPLATE_PATH'    => $mod_style_path,
 		));
-
-		$this->template->set_filenames(array(
-			'body' => 'rules.html'
-		));
-
-		page_footer();
 
 		$this->page_title = $this->user->lang['RULES'];
 		return $this->helper->render('rules.html', $this->page_title);

@@ -72,7 +72,6 @@ class blocks_module
 
 		$template->assign_vars(array(
 			'U_BACK'        => $this->u_action,
-			'PORTAL_JS'     => $portal_js,
 			'IMG_PATH'      => $img_path_acp_block_icons,
 			'IMG_PATH_ACP'  => $img_path_acp_icons,
 			'CSS_PATH'      => $css_path_acp,
@@ -148,7 +147,7 @@ class blocks_module
 					for ($i = 0; $i < $count = count($ids); $i++)
 					{
 						$ndxs[$i] = $i + 1;
-						$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . $ndxs[$i] . " WHERE id = " . $ids[$i];
+						$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . (int) $ndxs[$i] . " WHERE id = " . (int) $ids[$i];
 						$results = $db->sql_query($sql);
 					}
 					$db->sql_freeresult($result);
@@ -273,13 +272,13 @@ class blocks_module
 				if ($mode == 'up')// mod validation note... sql is not repeated!
 				{
 					// sql is not duplicated
-					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . $to_move['ndx'] . " WHERE id = " . $move_to['id'];
+					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . (int) $to_move['ndx'] . " WHERE id = " . (int) $move_to['id'];
 					if (!$result = $db->sql_query($sql))
 					{
 						trigger_error($user->lang['BLOCK_MOVE_ERROR'] . basename(dirname(__FILE__)) . '/' . basename(__FILE__) . $user->lang['LINE'] . __LINE__);
 					}
 
-					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . $move_to['ndx'] . " WHERE id = " . $to_move['id'];
+					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . (int) $move_to['ndx'] . " WHERE id = " . (int) $to_move['id'];
 					if (!$result = $db->sql_query($sql))
 					{
 						trigger_error($user->lang['BLOCK_MOVE_ERROR'] . basename(dirname(__FILE__)) . '/' . basename(__FILE__) . $user->lang['LINE'] . __LINE__);
@@ -289,13 +288,13 @@ class blocks_module
 				if ($mode == 'down')// mod validation note... sql is not repeated!
 				{
 					// sql is not duplicated
-					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . $move_to['ndx'] . " WHERE id = " . $to_move['id'];
+					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . (int) $move_to['ndx'] . " WHERE id = " . (int) $to_move['id'];
 					if (!$result = $db->sql_query($sql))
 					{
 						trigger_error($user->lang['BLOCK_MOVE_ERROR'] . basename(dirname(__FILE__)) . '/' . basename(__FILE__) . $user->lang['LINE'] . __LINE__);
 					}
 
-					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . $to_move['ndx'] . " WHERE id = " . $move_to['id'];
+					$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . (int) $to_move['ndx'] . " WHERE id = " . (int) $move_to['id'];
 					if (!$result = $db->sql_query($sql))
 					{
 						trigger_error($user->lang['BLOCK_MOVE_ERROR'] . basename(dirname(__FILE__)) . '/' . basename(__FILE__) . $user->lang['LINE'] . __LINE__);
@@ -1002,7 +1001,6 @@ class blocks_module
 
 				$template->assign_vars(array(
 					'U_BACK'			=> $this->u_action,
-					'PORTAL_JS'         => $portal_js,
 					'IMG_PATH'          => $img_path_acp_block_icons,
 					'IMG_PATH_ACP'      => $img_path_acp_icons,
 					'CSS_PATH'          => $css_path_acp,
@@ -1223,7 +1221,7 @@ class blocks_module
 			while ($row = $db->sql_fetchrow($result))
 			{
 				$id = $row['id'];
-				$sql = 'UPDATE ' . K_BLOCKS_TABLE . ' SET ndx = ' . $i . ' WHERE id = ' . $id;
+				$sql = 'UPDATE ' . K_BLOCKS_TABLE . ' SET ndx = ' . (int) $i . ' WHERE id = ' . (int) $id;
 				if (!$result = $db->sql_query($sql))
 				{
 					trigger_error($user->lang['COULD_NOT_REINDEX_BLOCKS'] . basename(dirname(__FILE__)) . '/' . basename(__FILE__) . $user->lang['LINE'] . __LINE__);
@@ -1361,7 +1359,7 @@ class blocks_module
 				$j = $i + 1;
 
 				$sql = "";
-				$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . (int) $j . " WHERE id = " . $id_array[$i];
+				$sql = "UPDATE " . K_BLOCKS_TABLE . " SET ndx = " . (int) $j . " WHERE id = " . (int) $id_array[$i];
 
 				if ($result = $db->sql_query($sql))
 				{

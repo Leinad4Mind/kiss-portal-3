@@ -30,7 +30,7 @@ class config_module
 
 		$data = $this->check_version();
 
-		$submit = (isset($_POST['submit'])) ? true : false;
+		$submit = $request->is_set_post('submit');
 
 		$forum_id   = $request->variable('f', 0);
 		$forum_data = $errors = array();

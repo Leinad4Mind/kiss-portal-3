@@ -290,5 +290,12 @@ if (!function_exists('add_smilies_count'))
  */
 function word_replace($search, $replace, $subject)
 {
-	return preg_replace('/[a-zA-Z]+/e', '\'\0\' == \'' . $search . '\' ? \'' . $replace . '\': \'\0\';', $subject);
+	return preg_replace_callback(
+		'/[a-zA-Z]+/',
+		function ($matches) use ($search, $replace)
+		{
+			return $matches[0] === $search ? $replace : $matches[0];
+		},
+		$subject
+	);
 }

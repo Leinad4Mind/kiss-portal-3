@@ -34,9 +34,9 @@ if ($request->is_set_post('submit'))
 }
 else
 {
-	$k_poll_wide    = $k_config['k_poll_wide'];
-	$k_poll_post_id = $k_config['k_poll_post_id'];
-	$k_poll_view    = $k_config['k_poll_view'];
+	$k_poll_wide    = isset($k_config['k_poll_wide']) ? (int) $k_config['k_poll_wide'] : 0;
+	$k_poll_post_id = isset($k_config['k_poll_post_id']) ? (int) $k_config['k_poll_post_id'] : 0;
+	$k_poll_view    = isset($k_config['k_poll_view']) ? (int) $k_config['k_poll_view'] : 0;
 }
 
 $template->assign_vars(array(

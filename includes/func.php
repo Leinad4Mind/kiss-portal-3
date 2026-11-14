@@ -27,6 +27,9 @@ class func
 	/* @var string phpBB root path */
 	protected $root_path;
 
+	/* @var string phpBB root path used by legacy block includes */
+	protected $phpbb_root_path;
+
 	/* @var string phpEx */
 	protected $php_ext;
 
@@ -37,12 +40,17 @@ class func
 		global $k_config, $k_groups, $k_blocks, $page_header;
 		global $phpbb_path_helper;
 
+		$this->config = $config;
+		$this->template = $template;
+		$this->user = $user;
+		$this->phpbb_root_path = $phpbb_root_path;
 		$this->php_ext = $phpbb_path_helper->get_php_ext();
+		$user->add_lang_ext('phpbbireland/portal', 'kiss_block_variables');
 
 		$block_cache_time  = $k_config['k_block_cache_time_default'];
 		$blocks_width 	   = $config['blocks_width'];
 		$blocks_enabled    = $config['blocks_enabled'];
-		$use_block_cookies = (isset($k_config['use_block_cookies'])) ? $k_config['use_block_cookies'] : 0;
+		$use_block_cookies = isset($k_config['use_block_cookies']) ? (bool) $k_config['use_block_cookies'] : true;
 
 		if (!$blocks_enabled)
 		{
@@ -55,18 +63,25 @@ class func
 		$show_center = $show_left = $show_right = false;
 		$LB = $CB = $RB = array();
 		$active_blocks = array();
+		$arr = array();
 
 		// if styles use large block images change path to images //
 		$block_image_path = $phpbb_root_path . 'ext/phpbbireland/portal/images/block_images/block/';
 		$big_image_path   = $phpbb_root_path . 'ext/phpbbireland/portal/images/block_images/large/';
 
 		$this_page = explode(".", $user->page['page']);
+		$this_page_name = $this->get_current_page();
 		$user_id = $user->data['user_id'];
 
 //		$logo = sgp_get_rand_logo();
 //		var_dump($logo);
 
 		$theme = rawurlencode($user->style['style_path']);
+		$arrange_blocks = $request->variable('arrange', 0) === 1
+			&& $user->data['user_id'] != ANONYMOUS
+			&& $auth->acl_get('u_k_portal')
+			&& strpos($this_page_name, 'portal') !== false;
+
 		$template->assign_vars(array(
 			'EXT_TEMPLATE_PATH'		=> $phpbb_root_path . 'ext/phpbbireland/portal/styles/' . $theme,
 			'EXT_IMAGE_PATH'		=> $phpbb_root_path . 'ext/phpbbireland/portal/images/',
@@ -79,7 +94,7 @@ class func
 		// Grab data for this user //
 		$sql = "SELECT group_id, user_type, user_style, user_avatar, user_avatar_type, username, user_left_blocks, user_center_blocks, user_right_blocks
 			FROM " . USERS_TABLE . "
-			WHERE user_id = $user_id";
+			WHERE user_id = " . (int) $user_id;
 
 		if ($result = $db->sql_query($sql))
 		{
@@ -90,18 +105,15 @@ class func
 			$usertype = $row['user_type'];
 			$groupid = $row['group_id'];
 
-			$left = $row['user_left_blocks'];
+			$left = portal_normalize_block_list($row['user_left_blocks']);
 			$LB = explode(',', $left);
-			$center = $row['user_center_blocks'];
+			$center = portal_normalize_block_list($row['user_center_blocks']);
 			$CB = explode(',', $center);
-			$right = $row['user_right_blocks'];
+			$right = portal_normalize_block_list($row['user_right_blocks']);
 			$RB = explode(',', $right);
 
-			$LCR = array_merge((array) $LB, (array) $CB, (array) $RB);
-			$left .= ',';
-			$center .= ',';
-
-			$all .= $left .= $center .= $right;
+			$LCR = array_values(array_unique(array_filter(array_map('intval', array_merge($LB, $CB, $RB)))));
+			$all = implode(',', $LCR);
 
 		}
 		else
@@ -110,40 +122,46 @@ class func
 		}
 
 		// Process block positions for members only //
-		if ($row['group_id'] != ANONYMOUS)
+		if ($user->data['user_id'] != ANONYMOUS)
 		{
-			if (isset($_COOKIE[$config['cookie_name'] . '_sgp_left']) || isset($_COOKIE[$config['cookie_name'] . '_sgp_center']) || isset($_COOKIE[$config['cookie_name'] . '_sgp_right']) && $use_block_cookies)
+			if ($use_block_cookies
+				&& isset($_COOKIE[$config['cookie_name'] . '_sgp_left'])
+				&& isset($_COOKIE[$config['cookie_name'] . '_sgp_center'])
+				&& isset($_COOKIE[$config['cookie_name'] . '_sgp_right']))
 			{
-				$left = $request->variable($config['cookie_name'] . '_sgp_left', '', false, true);
+				$left = $request->variable($config['cookie_name'] . '_sgp_left', '', false, \phpbb\request\request_interface::COOKIE);
 				$left = str_replace("left[]=", "", $left);
 				$left = str_replace("&amp;", ',', $left);
+				$left = portal_normalize_block_list($left);
 				$LBA = explode(',', $left);
 
-				$center = $request->variable($config['cookie_name'] . '_sgp_center', '', false, true);
+				$center = $request->variable($config['cookie_name'] . '_sgp_center', '', false, \phpbb\request\request_interface::COOKIE);
 				$center = str_replace("center[]=", "", $center);
 				$center = str_replace("&amp;", ',', $center);
+				$center = portal_normalize_block_list($center);
 				$CBA = explode(',', $center);
 
-				$right = $request->variable($config['cookie_name'] . '_sgp_right', '', false, true);
+				$right = $request->variable($config['cookie_name'] . '_sgp_right', '', false, \phpbb\request\request_interface::COOKIE);
 				$right = str_replace("right[]=", "", $right);
 				$right = str_replace("&amp;", ',', $right);
+				$right = portal_normalize_block_list($right);
 				$RBA = explode(',', $right);
 
-				// store cookie data (block positions in user table)
-				if (!empty($left))
-				{
-					$sql = 'UPDATE ' . USERS_TABLE . '
-						SET user_left_blocks = ' . "'" . $db->sql_escape($left) . "'" . ', user_center_blocks = ' . "'" . $db->sql_escape($center) . "'" . ', user_right_blocks = ' . "'" . $db->sql_escape($right) . "'" . '
-						WHERE user_id = ' . (int) $user->data['user_id'];
-					$db->sql_query($sql);
-					// set switch clear cookies now that we have them stored (we use javascript)//
-					$template->assign_vars(array(
-						'S_CLEAR_CACHE' => true
-					));
-				}
+				$LB = $LBA;
+				$CB = $CBA;
+				$RB = $RBA;
+				$LCR = array_values(array_unique(array_filter(array_map('intval', array_merge($LB, $CB, $RB)))));
+				$all = implode(',', $LCR);
+
+				// Store the complete three-column layout, including empty columns.
+				$sql = 'UPDATE ' . USERS_TABLE . '
+					SET user_left_blocks = ' . "'" . $db->sql_escape($left) . "'" . ', user_center_blocks = ' . "'" . $db->sql_escape($center) . "'" . ', user_right_blocks = ' . "'" . $db->sql_escape($right) . "'" . '
+					WHERE user_id = ' . (int) $user->data['user_id'];
+				$db->sql_query($sql);
+				$template->assign_var('S_CLEAR_CACHE', true);
 			}
 
-			if (empty($row['user_left_blocks']))
+		if (!$LCR)
 			{
 				$sql = "SELECT *
 					FROM " . K_BLOCKS_TABLE . "
@@ -158,7 +176,7 @@ class func
 					WHERE active = 1
 						AND (view_pages <> '0')
 						AND " . $db->sql_in_set('id', $LCR) . "
-					ORDER BY find_in_set(id,'" . $all . "')";
+				ORDER BY ndx ASC";
 			}
 		}
 		else
@@ -179,7 +197,17 @@ class func
 		}
 		$db->sql_freeresult($result);
 
-		$this_page_name = $this->get_current_page();
+		if ($all && count($active_blocks) > 1)
+		{
+			$layout_order = array_flip($LCR);
+			usort($active_blocks, function ($first, $second) use ($layout_order)
+			{
+				$first_order = isset($layout_order[(int) $first['id']]) ? $layout_order[(int) $first['id']] : PHP_INT_MAX;
+				$second_order = isset($layout_order[(int) $second['id']]) ? $layout_order[(int) $second['id']] : PHP_INT_MAX;
+
+				return $first_order <=> $second_order;
+			});
+		}
 
 		$id = $request->variable('style', 0);
 
@@ -213,7 +241,11 @@ class func
 
 		foreach ($active_blocks as $active_block)
 		{
-			$filename = substr($active_block['html_file_name'], 0, strpos($active_block['html_file_name'], '.'));
+			$filename = pathinfo(basename(str_replace('\\', '/', $active_block['html_file_name'])), PATHINFO_FILENAME);
+			if (!preg_match('/^block_[a-z0-9_-]+$/i', $filename))
+			{
+				continue;
+			}
 			if (file_exists($phpbb_root_path . 'ext/phpbbireland/portal/blocks/' . $filename . '.' . $this->php_ext))
 			{
 				if (in_array($page_id, $arr[$active_block['id']]))
@@ -413,9 +445,6 @@ class func
 			'PORTAL_ACTIVE'           => $config['portal_enabled'],
 			'PORTAL_BUILD'            => $config['portal_build'],
 			'PORTAL_VERSION'          => $config['portal_version'],
-			'READ_ARTICLE_IMG'        => $user->img('btn_read_article', 'READ_ARTICLE'),
-			'POST_COMMENTS_IMG'       => $user->img('btn_post_comments', 'POST_COMMENTS'),
-			'VIEW_COMMENTS_IMG'       => $user->img('btn_view_comments', 'VIEW_COMMENTS'),
 			'SITE_NAME'               => $config['sitename'],
 			'S_USER_LOGGED_IN'        => ($user->data['user_id'] != ANONYMOUS) ? true : false,
 			'S_SHOW_LEFT_BLOCKS'      => $show_left,
@@ -432,11 +461,9 @@ class func
 			'U_STAFF'                 => append_sid("{$phpbb_root_path}memberlist.$this->php_ext", 'mode=leaders'),
 			'U_SEARCH_BOOKMARKS'      => append_sid("{$phpbb_root_path}ucp.$this->php_ext", 'i=main&mode=bookmarks'),
 
-			'PORTAL_HEADER_BLOCKS'    => false,
-			'PORTAL_FOOTER_BLOCKS'    => false,
-
-			'U_PORTAL_ARRANGE'        => append_sid("{$phpbb_root_path}portal.$this->php_ext", "arrange=1"),
-			'S_ARRANGE'               => false,
+			'U_PORTAL_ARRANGE'        => append_sid("{$phpbb_root_path}app.$this->php_ext/portal.php", 'arrange=1'),
+			'S_ARRANGE'               => $arrange_blocks,
+			'COOKIE_NAME'             => $config['cookie_name'],
 			'HIDE_IMG'		=> '<img src="ext/phpbbireland/portal/images/hide.png"  alt="' . $user->lang['SHOWHIDE'] . '" title="' . $user->lang['SHOWHIDE'] . '" height="16" width="14" />',
 			'MOVE_IMG'		=> '<img src="ext/phpbbireland/portal/images/move.png"  alt="' . $user->lang['MOVE'] . '" title="' . $user->lang['MOVE'] . '" height="16" width="14" />',
 			'SHOW_IMG'		=> '<img src="ext/phpbbireland/portal/images/show.png"  alt="' . $user->lang['SHOW'] . '" title="' . $user->lang['SHOW'] . '" height="16" width="14" />',
@@ -448,6 +475,11 @@ class func
 	{
 		///var_dump('func.php > build_block_modules(' . $block_file . ') - called for each block!');
 		global $template;
+		$block_file = basename(str_replace('\\', '/', $block_file));
+		if (!preg_match('/^block_[a-z0-9_-]+\.html$/i', $block_file))
+		{
+			return '';
+		}
 		$template->set_filenames(array('block' => '@phpbbireland_portal' . '/blocks/' . $block_file));
 		return $template->assign_display('block', true);
 	}

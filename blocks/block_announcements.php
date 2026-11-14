@@ -184,7 +184,7 @@ if (sizeof($attach_list))
 	{
 		$sql = 'SELECT *
 			FROM ' . ATTACHMENTS_TABLE . '
-			WHERE ' . $db->sql_in_set('post_msg_id', $attach_array) . '
+			WHERE ' . $db->sql_in_set('post_msg_id', $attach_array, false, true) . '
 			ORDER BY filetime DESC';
 		$result = $db->sql_query($sql, $block_cache_time);
 
