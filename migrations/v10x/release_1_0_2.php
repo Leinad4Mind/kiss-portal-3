@@ -28,9 +28,9 @@ class release_1_0_2 extends \phpbb\db\migration\migration
 	{
 		$links_sql = array(
 			array(
-				'link'			=> 'github',
-				'url'			=> 'github.com/phpbbireland/portal',
-				'image'			=> 'github.gif',
+				'link'			=> 'Kiss Portal GitHub',
+				'url'			=> 'https://github.com/Leinad4Mind/portal',
+				'image'			=> 'www.phpbbireland+kiss2.gif',
 				'active'		=> '1',
 				'open_in_tab'	=> '1',
 			),

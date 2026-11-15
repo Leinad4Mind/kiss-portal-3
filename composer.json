@@ -2,9 +2,9 @@
 	"name": "phpbbireland/portal",
 	"type": "phpbb-extension",
 	"description": "Adds a fully integrated portal to phpBB 3.3.19",
-	"homepage": "https://github.com/phpbbireland/phpbb3-extension-portal",
-	"version": "1.1.0",
-	"time": "2026-11-14",
+	"homepage": "https://github.com/Leinad4Mind/portal",
+	"version": "1.1.1",
+	"time": "2026-11-15",
 	"keywords": ["phpbb", "extension", "kiss", "portal"],
 	"license": "GPL-2.0-only",
 	"authors": [
