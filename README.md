@@ -12,7 +12,7 @@ Portal family developed by Michael O'Toole and phpBB Ireland:
 - [Kiss Portal Engine](https://github.com/phpbbireland/kiss_portal_engine)
   contains the legacy 2.0.0 MOD for phpBB 3.0.11 and a separate `2026`
   snapshot of the extension tested on phpBB 3.3.15.
-- [Leinad4Mind/portal](https://github.com/Leinad4Mind/portal) preserves the
+- [KISS Portal 3](https://github.com/leinad4mind/kiss-portal-3) preserves the
   original `phpbbireland/portal` extension history and is the maintained branch
   for phpBB 3.3.19.
 

@@ -27,12 +27,15 @@ class release_1_1_1 extends \phpbb\db\migration\migration
 		$table = $this->table_prefix . 'k_link_images';
 		$sql = 'UPDATE ' . $table . '
 			SET ' . $this->db->sql_build_array('UPDATE', array(
-				'link' => 'Kiss Portal GitHub',
-				'url' => 'https://github.com/Leinad4Mind/portal',
+				'link' => 'KISS Portal 3 GitHub',
+				'url' => 'https://github.com/leinad4mind/kiss-portal-3',
 				'image' => 'www.phpbbireland+kiss2.gif',
 			)) . '
 			WHERE ' . $this->db->sql_in_set('link', array('github')) . '
-				OR ' . $this->db->sql_in_set('url', array('github.com/phpbbireland/portal'));
+				OR ' . $this->db->sql_in_set('url', array(
+					'github.com/phpbbireland/portal',
+					'https://github.com/Leinad4Mind/portal',
+				));
 		$this->db->sql_query($sql);
 	}
 }
